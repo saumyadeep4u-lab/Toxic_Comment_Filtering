@@ -1,7 +1,8 @@
+import os
+import re
 import streamlit as st
 import pandas as pd
 import torch
-import re  
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 from src.moderation import analyze_comment
 from src.config import MODEL_DIR, LABELS_LIST
@@ -36,6 +37,30 @@ def clean_text(text: str) -> str:
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
+def ensure_model_downloaded(model_path: str):
+    """Downloads the fine-tuned DistilBERT model folder from Google Drive if missing on Streamlit Cloud."""
+    safetensors_file = os.path.join(model_path, "model.safetensors")
+    if os.path.exists(safetensors_file):
+        return
+
+    os.makedirs(model_path, exist_ok=True)
+
+    # Extract the Google Drive model folder link from README.md
+    readme_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "README.md")
+    folder_url = None
+    if os.path.exists(readme_path):
+        with open(readme_path, "r", encoding="utf-8") as f:
+            match = re.search(r"https://drive\.google\.com/drive/folders/[^\s\)]+", f.read())
+            if match:
+                folder_url = match.group(0)
+
+    if not folder_url:
+        raise FileNotFoundError("Model weights not found locally and Google Drive folder link could not be read from README.md.")
+
+    import gdown
+    with st.spinner("Downloading fine-tuned DistilBERT model weights from Google Drive (first-time cloud setup)..."):
+        gdown.download_folder(url=folder_url, output=model_path, quiet=False, use_cookies=False)
+
 # Initialize the model ONLY ONCE using Streamlit's caching
 @st.cache_resource
 def load_toxicity_model():
@@ -44,6 +69,9 @@ def load_toxicity_model():
     # Dynamic path from config
     model_path = str(MODEL_DIR)
     
+    # Ensure model weights exist locally (downloads from Google Drive on Streamlit Cloud)
+    ensure_model_downloaded(model_path)
+    
     # 1. LOAD TOKENIZER FROM THE INTERNET:
     # This bypasses your folder entirely so it doesn't need vocab.txt
     tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
@@ -51,6 +79,7 @@ def load_toxicity_model():
     # 2. LOAD MODEL FROM YOUR FOLDER:
     # This loads your saved model.safetensors
     model = DistilBertForSequenceClassification.from_pretrained(model_path)
+    model.eval()
     
     return tokenizer, model
 
