@@ -5,6 +5,7 @@ This project is a real-time, hybrid AI moderation system designed to filter toxi
 Built with an interactive **Streamlit** front-end, the application analyzes chat messages in real-time, assigns a severity score (0.0 to 5.0), and triggers automated moderation actions (Allow, Warning, Mute, or Auto-Ban).
 
 ---
+🌐 **Live Demo:** [View the Interactive Price Comparison Dashboard](https://toxiccommentfiltering.streamlit.app/)
 
 ## 📁 Project Structure
 
