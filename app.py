@@ -166,7 +166,7 @@ with col1:
                     # 4. Save to log
                     log_entry = {
                         "Message": user_input,  # Display the original text in the UI
-                        "Score": float(result["severity_score"]),
+                        "Score": result["severity_score"],
                         "Action": result["action"],
                         "Tags": ", ".join(result["tags"]) if result["tags"] else "Non-Toxic"
                     }
@@ -184,18 +184,25 @@ with col2:
         # Convert log to dataframe for nice display
         df_log = pd.DataFrame(st.session_state.chat_log)
 
-        # Fixed height and explicit column widths prevent canvas resize oscillation
+        # Color coding function for the dataframe (exact match from app.py)
+        def color_action(val):
+            if val == "Allow": return 'background-color: lightgreen'
+            if val == "Warning": return 'background-color: lightyellow'
+            if "Mute" in val: return 'background-color: orange'
+            if val == "Auto-Ban": return 'background-color: lightcoral'
+            return ''
+
+        # Display the styled dataframe with locked height and column widths to prevent vibration
         st.dataframe(
-            df_log,
+            df_log.style.map(color_action, subset=['Action']),
             use_container_width=True,
             height=320,
             column_config={
                 "Message": st.column_config.TextColumn("Message", width="medium"),
                 "Score": st.column_config.NumberColumn("Score", format="%.1f", width="small"),
-                "Action": st.column_config.TextColumn("Moderation Action", width="small"),
+                "Action": st.column_config.TextColumn("Action", width="small"),
                 "Tags": st.column_config.TextColumn("Tags", width="medium"),
             },
-            hide_index=True
         )
     else:
         st.info("No messages analyzed yet. Type something in the chat box!")
