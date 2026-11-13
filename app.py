@@ -150,18 +150,16 @@ with col2:
     if st.session_state.chat_log:
         # Convert log to dataframe for nice display
         df_log = pd.DataFrame(st.session_state.chat_log)
+        
+        # Color coding function for the dataframe
+        def color_action(val):
+            if val == "Allow": return 'background-color: lightgreen'
+            if val == "Warning": return 'background-color: lightyellow'
+            if "Mute" in val: return 'background-color: orange'
+            if val == "Auto-Ban": return 'background-color: lightcoral'
+            return ''
             
-        # Display the dataframe safely without deprecated styling maps that crash React
-        st.dataframe(
-            df_log,
-            use_container_width=True,
-            column_config={
-                "Score": st.column_config.NumberColumn(format="%.1f"),
-                "Action": st.column_config.TextColumn("Moderation Action")
-            },
-            hide_index=True
-        )
+        # Display the styled dataframe
+        st.dataframe(df_log.style.map(color_action, subset=['Action']), use_container_width=True)
     else:
         st.info("No messages analyzed yet. Type something in the chat box!")
-    
-    
